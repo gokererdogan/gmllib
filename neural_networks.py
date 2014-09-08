@@ -88,6 +88,7 @@ def dbn_sample_supervised(ws_vh, ws_v, ws_h, w, b, y, k=1):
 def rbm_sample(w_vh, w_v, w_h, x, k=1, clamped=None):
     """
     Sample from RBM with k steps of Gibbs sampling
+    
     w_vh: Weights between visible and hidden units (matrix of size DxH)
     w_v: Visible unit biases (column vector of size Dx1)
     w_h: Hidden unit biases (column vector of size Hx1)
@@ -120,6 +121,7 @@ def rbm_sample(w_vh, w_v, w_h, x, k=1, clamped=None):
 def rbm_train(train_x, H, batch_size, epoch_count, epsilon, momentum, return_hidden=True, verbose=True):
     """
     Train a (binary) restricted boltzmann machine.
+    
     train_x: Input data. Matrix of size N (number of data points) x D (input dimension)
     H: Number of hidden units
     batch_size: Number of data points in each batch
@@ -254,6 +256,7 @@ def dbn_save(ws_vh, ws_v, ws_h, path='./', file_prefix=''):
 def dbn_forward_pass(ws_vh, ws_v, ws_h, x, y=None):
     """
     Deep belief net forward pass.
+    
     x: input data (N x D matrix)
     y: Class label (1-of-K coded, N x K matrix). If not None, it is concatenated
         to the input for top layer RBM when calculating the output of the DBN.
@@ -285,6 +288,7 @@ def dbn_supervised_predict_sample(ws_vh, ws_v, ws_h, x, k=20):
     Predict the class label of input x from supervised DBN
     WARNING: THIS IS PRETTY SLOW AND LESS RELIABLE THAN THE EXACT METHOD
     Uses the sampling method mentioned in section 6.2 of Hinton, Osindero, Teh 2006
+    
     x: Input data. (NxD matrix)
     k: Number of Gibbs steps
     """
@@ -318,6 +322,7 @@ def dbn_supervised_predict_exact(ws_vh, ws_v, ws_h, x):
     Predict the class label of input x from supervised DBN
     Uses the exact method mentioned in section 6.2 of Hinton, Osindero, Teh 2006
     The free energy formula is taken from http://deeplearning.net/tutorial/rbm.html
+    
     x: Input data. (NxD matrix)
     """
     L = len(ws_vh)
@@ -367,6 +372,7 @@ def dbn_supervised_predict_exact(ws_vh, ws_v, ws_h, x):
 def dbn_sample(ws_vh, ws_v, ws_h, x, y=None, k=1):
     """
     Sample from DBN
+    
     ws_vh, ws_v, ws_h: Lists of layer weights for DBN
     x: Initial sample. This is the input to DBN. (1xD vector)
     y: Class label for the sample. This corresponds to sampling from class
@@ -413,6 +419,7 @@ def dbn_train(train_x, H, batch_size, epoch_count, epsilon, momentum,
     """
     NOTE: SUPERVISED TRAINING IS NOT REALLY TESTED WELL. TEST IT SOMEDAY!!!
     Unsupervised layerwise training of a sigmoidal Deep Belief Net.
+    
     train_x: Training data. NxD matrix.
     train_y: Training labels NxK matrix (1-of-K coded). If provided, labels
         are included in the inputs to top layer RBM (See Hinton, Osindero, Teh 2006)
@@ -476,6 +483,7 @@ def dbn_supervised_finetune(train_x, train_y, validation_x, validation_y,
     Fine-tune Deep Belief Net weights in a supervised manner.
     Adds an output layer (softmax) and uses backprop to fine tune weights
     (Note that w_v are not needed, since network is only used in forward manner)
+    
     train_x: NxD matrix of training data
     train_y: NxK vector of training data labels. (Should be coded using 1ofK coding)
     validation: VnxD matrix of validation data
@@ -541,8 +549,10 @@ def nn_train(train_x, train_y, validation_x, validation_y, H,
             stop_if_val_error_increase=False, verbose=True):
     """
     Multilayer feed-forward sigmoid neural network training with backpropagation.
+    
     Hidden units have sigmoid non-linearity. 
     Output is soft-max.
+    
     train_x: NxD matrix of training data
     train_y: NxK vector of training data labels. (Should be coded using 1ofK coding)
     validation: VnxD matrix of validation data
@@ -679,8 +689,10 @@ def nn_train(train_x, train_y, validation_x, validation_y, H,
 def nn_forward_pass(x, w, b, return_all=True):
     """
     Forward pass for multilayer feed-forward sigmoid neural network
+    
     Hidden units have sigmoid non-linearity. 
     Output is soft-max.
+
     x: DxN matrix of input data
     w: Weights. List of weight matrices for each layer.
     b: Biases. List of bias vectors for each layer
