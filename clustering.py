@@ -4,11 +4,13 @@
 
 import numpy as np
 import scipy.spatial.distance as dist
+import dataset as ds
 
-def k_means(x, K, method='hard', distance_metric='euclidean', stop_tol=1e-6, beta=None):
+def k_means(dataset, K, method='hard', distance_metric='euclidean', stop_tol=1e-9, beta=None):
     """
     K-means clustering with hard and soft constraints.
-    x: data (data points in rows, attributes in columns)
+    dataset: A Dataset instance containing training data or
+        a numpy array (data points in rows, attributes in columns)
     K: number of clusters
     method: 'soft' or 'hard'
     distance_metric: any of the distance metrics accepted by scipy.spatial.distance.cdist
@@ -19,18 +21,24 @@ def k_means(x, K, method='hard', distance_metric='euclidean', stop_tol=1e-6, bet
     Ref: Mackay, D. Information Theory, Inference, and Learning Algorithms. Ch. 20
     """
     # check parameters
+    if isinstance(dataset, ds.DataSet):
+        x = dataset.train.x
+        D = dataset.D
+        N = dataset.train.N
+    else:
+        x = dataset
+        D = np.size(x, 1)
+        N = np.size(x, 0)
+
     if method not in ('soft', 'hard'):
         raise Exception('k-means: method should be \'soft\' or \'hard\'.')
     if method == 'soft' and not beta:
         raise Exception('k-means: beta parameter is required for soft k-means.')
     
-    D = np.size(x, 1)
-    N = np.size(x, 0)
     # initialize means randomly from range of x
     m = ((np.random.rand(K, D) - 0.5) * 2) * np.max(x, axis=0)
     
     diff_m = 1
-    m_old = np.zeros((K,D))
     while diff_m > stop_tol:
         m_old = m
         
@@ -44,10 +52,10 @@ def k_means(x, K, method='hard', distance_metric='euclidean', stop_tol=1e-6, bet
         
         # update m
         # beware of clusters with no assigned points (r=0)
-        tot_r = np.sum(r, axis=0, keepdims=True).T
+        tot_r = np.sum(r, axis=0).T
         sum_rx = np.dot(r.T, x)
         nonempty_clusters = (tot_r != 0)
-        m[nonempty_clusters, :] = sum_rx[nonempty_clusters, :] / tot_r[nonempty_clusters, :]
+        m[nonempty_clusters] = sum_rx[nonempty_clusters] / np.tile(tot_r[nonempty_clusters], (D, 1)).T
         
         # calculate change in m
         diff_m = np.sum((m - m_old)**2)

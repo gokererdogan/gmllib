@@ -6,20 +6,30 @@
 # Goker Erdogan
 # 17 February 2014
 
-import neural_networks as nn
-import helpers as hlp
+import gmllib.dataset as ds
+import gmllib.neural_networks as nn
+import gmllib.helpers as hlp
 
 if __name__ == '__main__':
     # -------LOAD DATASET------------------------------------------------------
-    train_x, validation_x, test_x, train_y, validation_y, test_y = hlp.load_dataset('mnist', './')
-    
+    dataset = ds.DataSet('mnist', trainx='mnist_train_x.npy', trainy='mnist_train_y.npy',
+                         validationx='mnist_val_x.npy', validationy='mnist_val_y.npy',
+                         testx='mnist_test_x.npy', testy='mnist_test_y.npy')
+
+    train_x = dataset.train.x
+    train_y = dataset.train.y
+    val_x = dataset.validation.x
+    val_y = dataset.validation.y
+    test_x = dataset.test.x
+    test_y = dataset.test.y
+
     train_x_gpu = nn.gnp.as_garray(train_x)
     test_x_gpu = nn.gnp.as_garray(test_x)
-    val_x_gpu = nn.gnp.as_garray(validation_x)
+    val_x_gpu = nn.gnp.as_garray(val_x)
     
-    train_y_gpu = nn.gnp.garray(train_vy)
-    test_y_gpu = nn.gnp.garray(test_vy)
-    val_y_gpu = nn.gnp.garray(validation_vy)
+    train_y_gpu = nn.gnp.garray(train_y)
+    test_y_gpu = nn.gnp.garray(test_y)
+    val_y_gpu = nn.gnp.garray(val_y)
     #--------LOAD DATASET END-------------------------------------------------#
     
 ##    # ------- TRAIN DBN (SUPERVISED) ----------------------------------------#

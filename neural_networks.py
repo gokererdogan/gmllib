@@ -1,6 +1,13 @@
-# Neural networks - Deep Learning
-# Goker Erdogan
-# 04 Feb 2013
+"""
+gmllib - Neural Networks
+    - Multilayer Perceptron (MLP)
+    - Restricted Boltzmann Machine (RBM)
+    - Deep Belief Network (DBM)
+
+Goker Erdogan
+04 Feb 2013
+https://github.com/gokererdogan
+"""
 
 import os
 
@@ -20,8 +27,8 @@ else:
     
 import gnumpy as gnp
 import numpy as np
-import helpers as hlp
 import time
+import dataset as ds
 
 # A NOTE ON TERMINOLOGY
 # We can talk of two types of DBNs for our purposes: supervised and unsupervised.
@@ -32,58 +39,6 @@ import time
 # Supervised DBN: Apart from the input at the bottom layer, the class labels are
 # also given as input to the TOP LAYER RBM. (See Hinton, Osindero, Teh 2006 for
 # an example of this for MNIST)
-
-def dbn_sample_supervised(ws_vh, ws_v, ws_h, w, b, y, k=1):
-    """
-    WARNING: THIS IS SIMPLY WRONG!!! USE dbn_sample.
-    Sample from Deep Belief Net that were trained supervised. Generate a sample
-    with class y (where y uses 1-of-K coding)
-    ws_vh, ws_v, ws_h: Lists of weights for Deep Belief Net
-    w, b: Weight and bias matrix for the output layer (latent features to class labels)
-    y: Sample class label (1-of-K coded)
-    k: Number of Gibbs steps in RBM
-    """
-    # remember that the last layer is a usual single layer feedforward neural 
-    # network attached to the whole dbn.
-    # so we first need to go back from y (output) to features (activations of 
-    # the last layer of dbn) 
-    # however the outputs underdetermine the features (assuming that number of
-    # features is greater than number of classes). so there are infinitely many
-    # feature vectors that would give us the observed class label
-    # what we do is we turn this into a fully determined problem by assigning
-    # random values to extra features (there would be number_of_features - number_of_classes
-    # such features) that cannot be determined. then we use a linalg.solve to
-    # get feature values
-    
-    L = len(ws_vh) # number of layers
-    K = y.shape[1] # number of classes
-    H = w.shape[0] # number of latent features
-    # we are solving w.T*x + b = y
-    y = y.T - gnp.as_numpy_array(b)
-    # assign random values to underdetermined outputs
-    y = np.concatenate((y, np.random.rand(H-K, 1)))
-    w_new = np.diag(np.ones(H))
-    w_new[0:K,:] = gnp.as_numpy_array(w.T)
-    x = np.linalg.solve(w_new, y)
-    
-    # the last layer of DBN is a RBM, we can use rbm_sample to sample from it
-    # and propagate it down to the input layer
-    # before we can call rbm_sample, we need to go from the output of rbm (which
-    # we have) to the input.
-    av = gnp.dot(ws_vh[-1], x) + ws_v[-1]
-    v = gnp.logistic(av)
-    
-    # now we can call rbm_sample
-    v = rbm_sample(ws_vh[-1], ws_v[-1], ws_h[-1], v, k)
-    
-    # propagate down to input
-    # backward (top-down) pass
-    for l in range(L-2,-1,-1):
-        av = gnp.dot(ws_vh[l], v) + ws_v[l]
-        v = gnp.logistic(av)
-    
-    return v
-    
         
 def rbm_sample(w_vh, w_v, w_h, x, k=1, clamped=None):
     """
@@ -118,11 +73,11 @@ def rbm_sample(w_vh, w_v, w_h, x, k=1, clamped=None):
         
     return h, v
 
-def rbm_train(train_x, H, batch_size, epoch_count, epsilon, momentum, return_hidden=True, verbose=True):
+def rbm_train(dataset, H, batch_size, epoch_count, epsilon, momentum, return_hidden=True, verbose=True):
     """
     Train a (binary) restricted boltzmann machine.
     
-    train_x: Input data. Matrix of size N (number of data points) x D (input dimension)
+    dataset: Input data. DataSet instance or matrix of size N (number of data points) x D (input dimension)
     H: Number of hidden units
     batch_size: Number of data points in each batch
     epoch_count: Number of training epochs
@@ -134,8 +89,15 @@ def rbm_train(train_x, H, batch_size, epoch_count, epsilon, momentum, return_hid
     biases), w_h (hidden unit biases), h (hidden unit activations for input data),
     error (reconstruction error at each epoch)
     """
-    N = train_x.shape[0]
-    D = train_x.shape[1]
+    if isinstance(dataset, ds.DataSet):
+        train_x = dataset.train.x
+        N = dataset.train.N
+        D = dataset.train.D
+    else:
+        train_x = dataset
+        N = train_x.shape[0]
+        D = train_x.shape[1]
+
     batch_count = int(np.ceil(N / float(batch_size)))
     
     # if momentum is a scalar, create a list with the same value for all epochs
@@ -252,7 +214,8 @@ def dbn_save(ws_vh, ws_v, ws_h, path='./', file_prefix=''):
         np.save(path + file_prefix + 'L' + repr(i+1) + '_w_vh.npy', gnp.as_numpy_array(ws_vh[i]))
         np.save(path + file_prefix + 'L' + repr(i+1) + '_w_v.npy', gnp.as_numpy_array(ws_v[i]))
         np.save(path + file_prefix + 'L' + repr(i+1) + '_w_h.npy', gnp.as_numpy_array(ws_h[i]))
-        
+
+
 def dbn_forward_pass(ws_vh, ws_v, ws_h, x, y=None):
     """
     Deep belief net forward pass.
@@ -472,10 +435,12 @@ def dbn_train(train_x, H, batch_size, epoch_count, epsilon, momentum,
         error.append(l_error)
         
     return ws_vh, ws_v, ws_h, h, error
-    
-def dbn_supervised_finetune(train_x, train_y, validation_x, validation_y, 
-            w_vh, w_h, batch_size=1, epoch_count=10, epsilon=0.01, 
-            momentum=0.0, stop_if_val_error_increase=False, verbose=True):
+
+
+def dbn_supervised_finetune(w_vh, w_h, dataset=None, train_x=None,
+                            train_y=None, validation_x=None, validation_y=None,
+                            batch_size=1, epoch_count=10, epsilon=0.01,
+                            momentum=0.0, stop_if_val_error_increase=False, verbose=True):
     """
     WARNING: THIS MAY NOT BE THE BEST WAY TO TUNE WEIGHTS DISCRIMINATIVELY. THIS
         JUST TRAINS THE NETWORK USING BACKPROP; IT MAY BE BETTER TO USE
@@ -483,7 +448,9 @@ def dbn_supervised_finetune(train_x, train_y, validation_x, validation_y,
     Fine-tune Deep Belief Net weights in a supervised manner.
     Adds an output layer (softmax) and uses backprop to fine tune weights
     (Note that w_v are not needed, since network is only used in forward manner)
-    
+
+    dataset: DataSet instance containing training and test data
+        if dataset is not provided, train and validation matrices should be provided.
     train_x: NxD matrix of training data
     train_y: NxK vector of training data labels. (Should be coded using 1ofK coding)
     validation: VnxD matrix of validation data
@@ -501,6 +468,12 @@ def dbn_supervised_finetune(train_x, train_y, validation_x, validation_y,
     bias vectors for each layer), validation predicted class labels and validation
     errors for each epoch
     """
+    if dataset is not None:
+        train_x = dataset.train.x
+        train_y = dataset.train.y
+        validation_x = dataset.validation.x
+        validation_y = dataset.validation.y
+
     K = train_y.shape[1]
     H = []
     layer_count = len(w_vh)
@@ -511,12 +484,13 @@ def dbn_supervised_finetune(train_x, train_y, validation_x, validation_y,
     init_w = w_vh + [gnp.randn((H[-1], K)) * 0.01]
     init_b = w_h + [gnp.randn((K, 1)) * 0.01]
         
-    w, b, val_pred, err = nn_train(train_x, train_y, validation_x, validation_y,
-                                    H, init_w=init_w, init_b=init_b, batch_size=batch_size,
-                                    epoch_count=epoch_count, epsilon=epsilon,
-                                    momentum=momentum, 
-                                    stop_if_val_error_increase=stop_if_val_error_increase,
-                                    verbose=verbose)
+    w, b, val_pred, err = nn_train(train_x=train_x, train_y=train_y,
+                                   validation_x=validation_x, validation_y=validation_y,
+                                   H=H, init_w=init_w, init_b=init_b, batch_size=batch_size,
+                                   epoch_count=epoch_count, epsilon=epsilon,
+                                   momentum=momentum,
+                                   stop_if_val_error_increase=stop_if_val_error_increase,
+                                   verbose=verbose)
     
     return w, b, val_pred, err
     
@@ -543,7 +517,7 @@ def nn_save(w, b, path='./', file_prefix=''):
         np.save(path + file_prefix + 'L' + repr(i+1) + '_b.npy', gnp.as_numpy_array(b[i]))
     
     
-def nn_train(train_x, train_y, validation_x, validation_y, H, 
+def nn_train(dataset=None, train_x=None, train_y=None, validation_x=None, validation_y=None, H=[4],
             init_w=None, init_b=None, batch_size=1, 
             epoch_count=10, epsilon=0.01, momentum=0.0, 
             stop_if_val_error_increase=False, verbose=True):
@@ -552,7 +526,9 @@ def nn_train(train_x, train_y, validation_x, validation_y, H,
     
     Hidden units have sigmoid non-linearity. 
     Output is soft-max.
-    
+
+    dataset: DataSet instance with training and validation data
+        if not provided, train and validation parameters should be provided.
     train_x: NxD matrix of training data
     train_y: NxK vector of training data labels. (Should be coded using 1ofK coding)
     validation: VnxD matrix of validation data
@@ -571,6 +547,12 @@ def nn_train(train_x, train_y, validation_x, validation_y, H,
     bias vectors for each layer), validation predicted class labels and validation
     errors for each epoch
     """
+    if dataset is not None:
+        train_x = dataset.train.x
+        train_y = dataset.train.y
+        validation_x = dataset.validation.x
+        validation_y = dataset.validation.y
+
     N = train_x.shape[0]
     D = train_x.shape[1]
     K = train_y.shape[1]

@@ -24,7 +24,7 @@ def convert_1ofK_to_ordinal(y):
     Convert 1-of-K coding to ordinals (class labels from 0 to K)
     Returns a Nx1 vector
     """
-    return np.argmax(y, axis=1)[:, np.newaxis]
+    return np.argmax(y, axis=1)
 
 def shuffle_dataset(x, y):
     """
@@ -32,8 +32,8 @@ def shuffle_dataset(x, y):
     Returns shuffled x and y
     """
     rp = np.random.permutation(x.shape[0])
-    x = x[rp,:]
-    y = y[rp,:]
+    x = x[rp]
+    y = y[rp]
     return x, y
 
 def normalize_dataset(x):
@@ -110,4 +110,16 @@ def load_dataset(dataset_name, path='./', prefix='', labeled=True, include_valid
             return train_x, validation_x, test_x, train_y, validation_y, test_y
         else:
             return train_x, test_x, train_y, test_y
+
+
+def rgb2gray(rgb):
+    """
+    Convert RGB image to grayscale. Uses the same
+    parameters with MATLAB's rgb2gray
+    """
+    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+
+    return gray
+
     
