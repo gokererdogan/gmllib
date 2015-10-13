@@ -14,6 +14,7 @@ https://github.com/gokererdogan
 
 import warnings
 import time
+import multiprocessing as mp
 import itertools as iter
 import cPickle as pkl
 import pandas as pd
@@ -22,15 +23,15 @@ class Experiment(object):
     """
     Experiment class implements functionality for running a given method
     with different sets of parameters and combining the results into a
-    single data frame.
+    single data frame. This class also implements a crude form of parallelism
+    that allows the experiment to be run on multiple cores.
     """
-    def __init__(self, name, experiment_method, dataset, **params):
+    def __init__(self, name, experiment_method, **params):
         """
         Initialize Experiment instance
         :param name: Experiment name
         :param experiment_method: Method to run. This method should
             return a dictionary.
-        :param dataset: Dataset passed to the experiment_method
         :param params: A collection of keyword=value arguments that
         specify the set of parameters to test. The cartesian products
         of all parameters are taken and experiment_method is run for
@@ -42,7 +43,6 @@ class Experiment(object):
         """
         self.name = name
         self.experiment_method = experiment_method
-        self.dataset = dataset
         self.params = Experiment.keyword_args_to_parameter_set(**params)
         self.experiment_finished = False
         self.start_time = None
@@ -72,7 +72,7 @@ class Experiment(object):
     def reset(self):
         self.experiment_finished = False
 
-    def run(self, parallel=False):
+    def run(self, parallel=False, num_processes=2):
         if self.experiment_finished:
             warnings.warn("Experiment is already run. Call reset if you want to re-run the experiment.")
             return
@@ -80,15 +80,25 @@ class Experiment(object):
         self.start_time = time.time()
         self.start_time_str = time.strftime("%Y%m%d_%H%M%S")
 
-        # run method with each parameter
         results = []
-        for param in self.params:
-            start = time.time()
-            result = self.experiment_method(dataset=self.dataset, **param)
-            end = time.time()
-            result.update(param)
-            result.update({'StartTime': start, 'EndTime': end})
-            results.append(result)
+        if parallel and num_processes > 0:
+            # run in parallel
+            proc_pool = mp.Pool(processes=num_processes)
+            async_results = [proc_pool.apply_async(self.experiment_method, kwds=d) for d in self.params]
+            proc_pool.close()
+            proc_pool.join()
+            for param, ar in zip(self.params, async_results):
+                result = ar.get()
+                result.update(param)
+                results.append(ar.get())
+        else:
+            for param in self.params:
+                start = time.time()
+                result = self.experiment_method(**param)
+                end = time.time()
+                result.update(param)
+                result.update({'StartTime': start, 'EndTime': end})
+                results.append(result)
 
         self.end_time = time.time()
         self.end_time_str = time.strftime("%Y%m%d_%H%M%S")
@@ -107,7 +117,7 @@ class Experiment(object):
         if self.experiment_finished:
             if path.strip() == "":
                 path = "."
-            open("{0:s}/{1:s}_{2:s}.csv".format(path, self.name, self.start_time_str), 'w').write(self.results.to_string())
+            self.results.to_csv("{0:s}/{1:s}_{2:s}.csv".format(path, self.name, self.start_time_str))
         else:
             warnings.warn("Experiment is not run yet. Results are not available.")
 
