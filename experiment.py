@@ -88,9 +88,14 @@ class Experiment(object):
             proc_pool.close()
             proc_pool.join()
             for param, ar in zip(self.params, async_results):
-                result = ar.get()
-                result.update(param)
-                results.append(ar.get())
+                try:
+                    result = ar.get()
+                except Exception as e:
+                    warnings.warn("Experiment warning: One process failed.")
+                    print(e)
+                else:
+                    result.update(param)
+                    results.append(ar.get())
         else:
             for param in self.params:
                 start = time.time()
