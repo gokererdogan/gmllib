@@ -15,6 +15,7 @@ https://github.com/gokererdogan
 import warnings
 import time
 import multiprocessing as mp
+import os
 import itertools as iter
 import cPickle as pkl
 import pandas as pd
@@ -126,3 +127,20 @@ class Experiment(object):
         else:
             warnings.warn("Experiment is not run yet. Results are not available.")
 
+    def append_csv(self, file):
+        """
+        Append the results of the experiment to csv file.
+        If the file does not exist, it is created.
+        """
+        if self.experiment_finished:
+            if os.path.isfile(file):
+                # read the already available results
+                df = pd.read_csv(file, index_col=0)
+            else:
+                df = pd.DataFrame()
+            # combine the results
+            df = pd.concat([df, self.results], ignore_index=True)
+            # write to file
+            df.to_csv(file)
+        else:
+            warnings.warn("Experiment is not run yet. Results are not available.")

@@ -3,6 +3,9 @@
 # 14 Feb 2014
 # Goker Erdogan
 
+import math
+import sys
+
 import numpy as np
 
 def convert_to_1ofK(y):
@@ -57,60 +60,6 @@ def calculate_classification_error(y, pred_y):
     wrong = np.sum(pred_labels != y_labels)
     return wrong / float(y.shape[0])
 
-def save_dataset(dataset_name, path='./', prefix='', train_x=None, val_x=None, test_x=None, train_y=None, val_y=None, test_y=None):
-    """
-    Save training, validation and test data to disk.
-    dataset_name: Dataset name (string)
-    path: Path
-    prefix: Filename prefix
-    """
-    if train_x is not None:
-        np.save(path + prefix + dataset_name + '_train_x.npy', train_x)
-    
-    if val_x is not None:
-        np.save(path + prefix + dataset_name + '_val_x.npy', val_x)
-        
-    if test_x is not None:
-        np.save(path + prefix + dataset_name + '_test_x.npy', test_x)
-    
-    if train_y is not None:
-        np.save(path + prefix + dataset_name + '_train_y.npy', train_y)
-        
-    if val_y is not None:
-        np.save(path + prefix + dataset_name + '_val_y.npy', val_y)
-        
-    if test_y is not None:
-        np.save(path + prefix + dataset_name + '_test_y.npy', test_y)
-        
-def load_dataset(dataset_name, path='./', prefix='', labeled=True, include_validation=True):
-    """
-    Load training, validation and test data from disk.
-    dataset_name: Dataset name (string)
-    path: Path
-    prefix: Filename prefix
-    labeled: If True, load labels
-    include_validation: if True, load validation data
-    Returns train_x, (validation_x), test_x, (train_y, (validation_y), test_y)
-    """
-    train_x = np.load(path + prefix + dataset_name + '_train_x.npy')
-    test_x = np.load(path + prefix + dataset_name + '_test_x.npy')
-    
-    if not labeled:
-        if include_validation:
-            validation_x = np.load(path + prefix + dataset_name + '_val_x.npy')
-            return train_x, validation_x, test_x
-        else:
-            return train_x, test_x
-    else:
-        train_y = np.load(path + prefix + dataset_name + '_train_y.npy')
-        test_y = np.load(path + prefix + dataset_name + '_test_y.npy')
-        if include_validation:
-            validation_x = np.load(path + prefix + dataset_name + '_val_x.npy')
-            validation_y = np.load(path + prefix + dataset_name + '_val_y.npy')
-            return train_x, validation_x, test_x, train_y, validation_y, test_y
-        else:
-            return train_x, test_x, train_y, test_y
-
 
 def rgb2gray(rgb):
     """
@@ -121,5 +70,26 @@ def rgb2gray(rgb):
     gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
 
     return gray
+
+def progress_bar(current, max, label="", width=40, update_freq=1):
+    """
+    Print progress bar
+        update_freq: print the progress bar every update_freq iteration. Useful if you want to update the progress bar
+            more slowly
+    """
+    if current != 1 and (current % update_freq != 0):
+        return
+    percent = (current / float(max) * 100)
+    filled = int(width * percent / 100.0)
+    unfilled = width - filled
+    done_str = ""
+    if current >= max:
+        done_str = "DONE\n"
+    s = "\r[%{0:3d}][{1:s}>{2:s}] {3:s}{4:s}".format(int(percent), "=" * (filled-1), "-" * unfilled, label, done_str)
+    sys.stdout.write(s)
+    sys.stdout.flush()
+
+
+
 
     
