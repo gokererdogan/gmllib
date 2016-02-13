@@ -13,8 +13,10 @@ https://github.com/gokererdogan
 import numpy as np
 import os.path
 
+
 class DataSetException(Exception):
     pass
+
 
 class MultiFileArray(object):
     """
@@ -61,7 +63,6 @@ class MultiFileArray(object):
             # we need to make sure the number of variables (columns) are the same across files
             if list(x.shape[1:]) != shape[1:]:
                 raise DataSetException("Number of variables (columns) should be the same across files.")
-                return None
             N = x.shape[0]
             shape[0] += N
             N_file.append(N)
@@ -116,6 +117,7 @@ class MultiFileArray(object):
             return data
         else:
             raise DataSetException("MultiFileArray can only be indexed with int or slices.")
+
 
 class Data(object):
     """

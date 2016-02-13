@@ -27,12 +27,21 @@ class Experiment(object):
     single data frame. This class also implements a crude form of parallelism
     that allows the experiment to be run on multiple cores.
     """
-    def __init__(self, name, experiment_method, **params):
+    def __init__(self, name, experiment_method, grouped_params=None, **params):
         """
         Initialize Experiment instance
         :param name: Experiment name
         :param experiment_method: Method to run. This method should
             return a dictionary.
+        :param grouped_params: The names of the parameters in the same group.
+            Theses parameters are treated as a single parameter, i.e., only
+            one of the parameters is included in the cartesian product.
+                e.g., a=[1, 2], b=[3, 4], c=[-3, -4] with 'b' and 'c'
+                grouped together results in parameter set:
+                    {'a': 1, 'c': -3, 'b': 3}
+                    {'a': 1, 'c': -4, 'b': 4}
+                    {'a': 2, 'c': -3, 'b': 3}
+                    {'a': 2, 'c': -4, 'b': 4}
         :param params: A collection of keyword=value arguments that
         specify the set of parameters to test. The cartesian products
         of all parameters are taken and experiment_method is run for
@@ -44,7 +53,7 @@ class Experiment(object):
         """
         self.name = name
         self.experiment_method = experiment_method
-        self.params = Experiment.keyword_args_to_parameter_set(**params)
+        self.params = Experiment.keyword_args_to_parameter_set(grouped_params, **params)
         self.experiment_finished = False
         self.start_time = None
         self.start_time_str = None
@@ -53,11 +62,12 @@ class Experiment(object):
         self.results = None
 
     @staticmethod
-    def keyword_args_to_parameter_set(**params):
+    def keyword_args_to_parameter_set(grouped_params=None, **params):
         """
         Convert a dictionary of keyword arguments to a set of parameters.
         Takes the cartesian product of keyword argument to form the
         parameters.
+        :param grouped_params: A list of the names of the parameters grouped together.
         :param params: A dictionary of parameters
         :return: A list of dictionaries where each dictionary is one set of
         parameters.
@@ -66,8 +76,37 @@ class Experiment(object):
         for k, v in params.iteritems():
             if not isinstance(v, list):
                 params[k] = [v]
-        params_vals = iter.product(*params.values())
-        params_set = [dict(zip(params.keys(), l)) for l in params_vals]
+
+        if grouped_params is not None:
+            # parameters in the group should have the same number of possible values
+            gp_len = len(params[grouped_params[0]])
+            for gp in grouped_params:
+                if len(params[gp]) != gp_len:
+                    raise ValueError("All parameters in a group should have the same number of possible values.")
+
+            # separate the dictionary for grouped params
+            g_params = {}
+            for gp in grouped_params:
+                g_params[gp] = params[gp]
+                del params[gp]
+
+            # construct the parameter set for grouped parameters
+            g_params_vals = zip(*g_params.values())
+            g_params_set = [dict(zip(g_params.keys(), l)) for l in g_params_vals]
+
+        # construct the parameter set for non-grouped variables
+        ng_params_vals = iter.product(*params.values())
+        ng_params_set = [dict(zip(params.keys(), l)) for l in ng_params_vals]
+
+
+        if grouped_params is not None:
+            params_set = []
+            for ps in ng_params_set:
+                for gps in g_params_set:
+                    params_set.append(dict(zip(ps.keys() + gps.keys(), ps.values() + gps.values())))
+        else:
+            params_set = ng_params_set
+
         return params_set
 
     def reset(self):

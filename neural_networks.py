@@ -39,7 +39,8 @@ import dataset as ds
 # Supervised DBN: Apart from the input at the bottom layer, the class labels are
 # also given as input to the TOP LAYER RBM. (See Hinton, Osindero, Teh 2006 for
 # an example of this for MNIST)
-        
+
+
 def rbm_sample(w_vh, w_v, w_h, x, k=1, clamped=None):
     """
     Sample from RBM with k steps of Gibbs sampling
@@ -72,6 +73,7 @@ def rbm_sample(w_vh, w_v, w_h, x, k=1, clamped=None):
             v[clamped[0]:clamped[1],:] = cx
         
     return h, v
+
 
 def rbm_train(dataset, H, batch_size, epoch_count, epsilon, momentum, return_hidden=True, verbose=True):
     """
@@ -206,6 +208,7 @@ def dbn_load(layer_count, path='./', file_prefix=''):
     
     return ws_vh, ws_v, ws_h
 
+
 def dbn_save(ws_vh, ws_v, ws_h, path='./', file_prefix=''):
     """Temporary function for saving dbn weights from disk
     """
@@ -246,6 +249,7 @@ def dbn_forward_pass(ws_vh, ws_v, ws_h, x, y=None):
     
     return ah.T, h.T
 
+
 def dbn_supervised_predict_sample(ws_vh, ws_v, ws_h, x, k=20):
     """
     Predict the class label of input x from supervised DBN
@@ -279,6 +283,7 @@ def dbn_supervised_predict_sample(ws_vh, ws_v, ws_h, x, k=20):
     
     # sample visible units of top level RBM given 
     return v[0:K,:].T
+
 
 def dbn_supervised_predict_exact(ws_vh, ws_v, ws_h, x):
     """
@@ -376,6 +381,7 @@ def dbn_sample(ws_vh, ws_v, ws_h, x, y=None, k=1):
         v = gnp.logistic(av)
         
     return v.T
+
 
 def dbn_train(train_x, H, batch_size, epoch_count, epsilon, momentum, 
                 train_y=None, return_hidden=True, verbose=True):
@@ -507,6 +513,7 @@ def nn_load(layer_count, path='./', file_prefix=''):
         b.append(gnp.as_garray(bi))
     
     return w, b
+
 
 def nn_save(w, b, path='./', file_prefix=''):
     """Temporary function for saving neural network weights to disk
@@ -667,6 +674,7 @@ def nn_train(dataset=None, train_x=None, train_y=None, validation_x=None, valida
                 break
     
     return w, b, val_pred_y, val_error
+
 
 def nn_forward_pass(x, w, b, return_all=True):
     """

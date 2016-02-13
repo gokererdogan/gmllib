@@ -4,6 +4,7 @@ MultiFileArray indexing improvements. Right now we can only index with int or sl
     - Boolean indexing???
 Every algorithm should have the same interface: dataset (or input matrices), params. Make params a dictionary.
 	- Do I want to force each algorithm to accept DataSet instances???
+Write unittests
 
 Algorithms to implement
 - From Bishop's book

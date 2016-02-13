@@ -8,6 +8,7 @@ import sys
 
 import numpy as np
 
+
 def convert_to_1ofK(y):
     """
     Convert labels 0-K to 1-of-K coding.
@@ -29,6 +30,7 @@ def convert_1ofK_to_ordinal(y):
     """
     return np.argmax(y, axis=1)
 
+
 def shuffle_dataset(x, y):
     """
     Shuffle dataset (x: input, y: labels)
@@ -38,6 +40,7 @@ def shuffle_dataset(x, y):
     x = x[rp]
     y = y[rp]
     return x, y
+
 
 def normalize_dataset(x):
     """
@@ -71,13 +74,14 @@ def rgb2gray(rgb):
 
     return gray
 
+
 def progress_bar(current, max, label="", width=40, update_freq=1):
     """
     Print progress bar
         update_freq: print the progress bar every update_freq iteration. Useful if you want to update the progress bar
             more slowly
     """
-    if current != 1 and (current % update_freq != 0):
+    if current < max and current != 1 and (current % update_freq != 0):
         return
     percent = (current / float(max) * 100)
     filled = int(width * percent / 100.0)
@@ -89,7 +93,3 @@ def progress_bar(current, max, label="", width=40, update_freq=1):
     sys.stdout.write(s)
     sys.stdout.flush()
 
-
-
-
-    
