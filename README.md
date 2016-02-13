@@ -6,3 +6,6 @@ So far the library contains implementations for
 - Restricted Boltzmann Machines and Deep Belief Networks (with support for GPUs through gnumpy)
 - k-Means clustering
 - Principal Components Analysis
+- Metric learning
+    - Method of Schultz, M., & Joachims, T. (2003) that learns a diagonal distance metric matrix
+    - A variant of Schultz, M., & Joachims, T. (2003) that learns a low-rank distance metric matrix
