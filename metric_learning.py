@@ -1,9 +1,13 @@
 # gmllib - metric learning
 #
 # This file contains the implementations of two closely related metric learning techniques.
-#   learn_diagonal_metric: The method proposed in
-#       This method learns a diagonal metric matrix, i.e., weights for each dimension.
-#   learn_low_rank_metric: This method is a variant of the above method that assumes
+# - learn_diagonal_metric: The method proposed in
+#       Schultz, M., & Joachims, T. (2003).
+#       Learning a Distance Metric from Relative Comparisons.
+#       In Advances in Neural Information Processing Systems.
+#   This method learns a diagonal metric matrix, i.e., weights for each dimension.
+#
+# - learn_low_rank_metric: This method is a variant of the above method that assumes
 #       the metric matrix is low rank, i.e., A_{dxd} = G^T G where G rxd.
 #
 # Feb. 9, 2016
@@ -138,6 +142,7 @@ def calculate_accuracy(x, A, relations, type='full'):
             correct += 1.0
     return correct / len(relations)
 
+
 def _learn_diagonal_metric_scipy_optimize(method, cost, dist_mat, dist_squared, max_iter, tol, verbose):
     """
     This method is used by learn_diagonal_metric as an optimization procedure. See learn_diagonal_metric
@@ -250,7 +255,8 @@ def learn_diagonal_metric(x, relations, cost, method, step=1e-4, max_iter=10000,
         x (numpy.ndarray): Data matrix
         relations (list): Relative similarity constraints of the form (i, j, k)
         cost: Cost parameter
-        method (string): One of 'GD', 'L-BFGS-B', 'TNC', and 'SLSQP'. 'GD' implements a simple gradient descent procedure.
+        method (string): One of 'GD', 'L-BFGS-B', 'TNC', and 'SLSQP'. 'GD' implements a simple gradient descent
+            procedure.
             Rest of the methods are implemented in scipy.optimize.
             NOTE that 'GD' is much slower compared to scipy.optimize methods. It is included here as an educational
             example.
@@ -417,10 +423,9 @@ def learn_low_rank_metric(x, relations, rank, cost, method='TNC', step=1e-4, max
         G, converged = _learn_low_rank_metric_gradient_descent(x, relations, rank, S_ijk, cost=cost, tol=tol, step=step,
                                                                max_iter=max_iter, verbose=verbose)
     else:
-        G, converged = _learn_low_rank_metric_scipy_optimize(x, relations, rank, S_ijk, cost=cost, method=method, tol=tol, 
-                                                             max_iter=max_iter, verbose=verbose)
+        G, converged = _learn_low_rank_metric_scipy_optimize(x, relations, rank, S_ijk, cost=cost, method=method,
+                                                             tol=tol, max_iter=max_iter, verbose=verbose)
 
-            
     A = np.dot(G.T, G)
     objective_value = calculate_objective_function_value(x, G, relations, cost, type='low_rank')
     acc = calculate_accuracy(x, G, relations, type='low_rank')
@@ -453,26 +458,23 @@ if __name__ == '__main__':
     step = 0.0001
 
     diag_A, diag_obj, diag_acc, diag_converged = learn_diagonal_metric(x, relations[0:N_train], cost=cost, method='GD',
-                                                                       step=step, tol=1e-3, max_iter=100000, verbose=True)
+                                                                       step=step, tol=1e-3, max_iter=100000,
+                                                                       verbose=True)
     diag_test_acc = calculate_accuracy(x, diag_A, relations[N_train:])
-
 
     diag_A2, diag_obj2, diag_acc2, diag_converged2 = learn_diagonal_metric(x, relations[0:N_train], cost=cost, 
                                                                            method='SLSQP', tol=1e-6, max_iter=10000, 
                                                                            verbose=True)
     diag_test_acc2 = calculate_accuracy(x, diag_A2, relations[N_train:])
 
-
     lr_A, lr_obj, lr_acc, lr_converged = learn_low_rank_metric(x, relations[0:N_train], rank=2, cost=cost, method='TNC',
                                                                tol=1e-6, max_iter=20000, verbose=True)
     lr_test_acc = calculate_accuracy(x, lr_A, relations[N_train:])
 
-
-    lr_A2, lr_obj2, lr_acc2, lr_converged2 = learn_low_rank_metric(x, relations[0:N_train], rank=2, cost=cost, method='GD',
-                                                                   step=step, tol=1e-9, max_iter=10000, verbose=True)
+    lr_A2, lr_obj2, lr_acc2, lr_converged2 = learn_low_rank_metric(x, relations[0:N_train], rank=2, cost=cost,
+                                                                   method='GD', step=step, tol=1e-9, max_iter=10000,
+                                                                   verbose=True)
     lr_test_acc2 = calculate_accuracy(x, lr_A2, relations[N_train:])
-
-
 
     print('Diagonal with GD:', diag_obj, diag_acc, diag_test_acc, diag_converged)
     print('Diagonal with SLSQP: ', diag_obj2, diag_acc2, diag_test_acc2, diag_converged2)
